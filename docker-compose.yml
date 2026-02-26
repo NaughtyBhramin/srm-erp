@@ -1,0 +1,104 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: srm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: srm_erp
+      POSTGRES_USER: srm_user
+      POSTGRES_PASSWORD: srm_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - srm_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U srm_user -d srm_erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: srm_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://srm_user:srm_password@postgres:5432/srm_erp
+      JWT_SECRET_KEY: srm-jwt-secret-key-change-in-production
+      SECRET_KEY: srm-secret-key-change-in-production
+      ENVIRONMENT: production
+      JAVA_SERVICE_URL: http://java-service:8080
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - srm_network
+    volumes:
+      - ./backend:/app
+
+  # Java Spring Boot Microservice
+  java-service:
+    build:
+      context: ./java-microservice
+      dockerfile: Dockerfile
+    container_name: srm_java_service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/srm_erp
+      DB_USER: srm_user
+      DB_PASSWORD: srm_password
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - srm_network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: srm_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - srm_network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: srm_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - srm_network
+
+volumes:
+  postgres_data:
+
+networks:
+  srm_network:
+    driver: bridge
