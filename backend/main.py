@@ -1,92 +1,53 @@
 """
-SRM University ERP System - FastAPI Backend
-Main Application Entry Point
+SRM ERP v2 — Main Application
+Role-based: Admin, Student, Faculty, Accounts, Security, Transport, Medical, Parent
 """
-
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.security import HTTPBearer
-import uvicorn
-import logging
+from app.api import auth, students, faculty, parking, dashboard, notifications
+from app.api.hostel import router as hostel_router
+from app.api.medical import router as medical_router
+from app.api.social import router as social_router
+from app.api.colleges import router as colleges_router
+from app.api.transport_v2 import router as transport_router
+from app.api.accounts_v2 import router as accounts_router
 
-from app.api import auth, students, faculty, parking, attendance, fees, dashboard, notifications
-from app.db.database import engine, Base
-from app.core.config import settings
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
-# Create FastAPI app
 app = FastAPI(
-    title="SRM University ERP System",
-    description="Complete Enterprise Resource Planning System for SRM University with Vehicle Parking Management",
-    version="1.0.0",
+    title="SRM ERP API v2",
+    description="Campus Intelligence Platform — Role-Based ERP",
+    version="2.0.0",
     docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
+    redoc_url="/api/redoc"
 )
 
-# Middleware
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "*"],
+    allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
 )
 
-# Include routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(students.router, prefix="/api/students", tags=["Students"])
-app.include_router(faculty.router, prefix="/api/faculty", tags=["Faculty"])
-app.include_router(parking.router, prefix="/api/parking", tags=["Vehicle Parking"])
-app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
-app.include_router(fees.router, prefix="/api/fees", tags=["Fee Management"])
-app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
-app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+# Core routers
+app.include_router(auth.router)
+app.include_router(students.router)
+app.include_router(faculty.router)
+app.include_router(parking.router)
+app.include_router(dashboard.router)
+app.include_router(notifications.router)
 
+# New v2 routers
+app.include_router(hostel_router)
+app.include_router(medical_router)
+app.include_router(social_router)
+app.include_router(colleges_router)
+app.include_router(transport_router)
+app.include_router(accounts_router)
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("🚀 SRM ERP System starting up...")
-    logger.info(f"📊 Environment: {settings.ENVIRONMENT}")
+@app.get("/")
+def root():
+    return {"status": "online", "version": "2.0.0", "platform": "SRM ERP Campus Intelligence"}
 
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("🛑 SRM ERP System shutting down...")
-
-
-@app.get("/", tags=["Health"])
-async def root():
-    return {
-        "message": "SRM University ERP System API",
-        "version": "1.0.0",
-        "status": "operational",
-        "university": "SRM Institute of Science and Technology"
-    }
-
-
-@app.get("/api/health", tags=["Health"])
-async def health_check():
-    return {
-        "status": "healthy",
-        "service": "SRM ERP API",
-        "version": "1.0.0"
-    }
-
-
-if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        workers=1
-    )
+@app.get("/health")
+def health():
+    return {"status": "healthy"}

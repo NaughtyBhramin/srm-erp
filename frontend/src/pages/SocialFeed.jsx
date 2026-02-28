@@ -1,174 +1,263 @@
 import { useState } from 'react'
-import { Heart, MessageCircle, Share2, Bookmark, Flame, Image, Plus, Send, Award, Bell, TrendingUp } from 'lucide-react'
+import Layout from '../components/Layout'
 
-const USERS = [
-  { id: 1, name: 'Rahul Sharma', role: 'CSE · Year 3', avatar: 'R', streak: 12, color: '#6378ff' },
-  { id: 2, name: 'Kavya Reddy', role: 'ECE · Year 2', avatar: 'K', streak: 28, color: '#f5a623' },
-  { id: 3, name: 'Dr. Priya Nair', role: 'Faculty · CSE', avatar: 'P', streak: 45, color: '#00e5a0' },
-  { id: 4, name: 'Arun Patel', role: 'MECH · Year 4', avatar: 'A', streak: 7, color: '#a855f7' },
-  { id: 5, name: 'Sneha Kumar', role: 'CSE · Year 3', avatar: 'S', streak: 19, color: '#ff4d6d' },
+const COLLEGES = [
+  { code:'VC', name:'Vivekananda', color:'#ff6b35' },
+  { code:'KC', name:'Kalam',       color:'#5b6ef5' },
+  { code:'TC', name:'Tagore',      color:'#00c896' },
+  { code:'BC', name:'Bose',        color:'#e8b400' },
 ]
-
+const POST_TYPES = ['all','post','announcement','achievement','whistleblower','event','study']
+const TYPE_META = {
+  post:          { icon:'💬', color:'#7b8ab8', label:'Post' },
+  announcement:  { icon:'📢', color:'#00c896', label:'Announcement' },
+  achievement:   { icon:'🏆', color:'#e8b400', label:'Achievement' },
+  whistleblower: { icon:'🔔', color:'#ef4444', label:'Whistleblower' },
+  event:         { icon:'🎉', color:'#e879c0', label:'Event' },
+  study:         { icon:'📚', color:'#5b6ef5', label:'Study' },
+}
 const INIT_POSTS = [
-  { id: 1, user: USERS[2], time: '10 min ago', content: '📢 Important: CSE Lab 4 will be under maintenance tomorrow. All practicals rescheduled to Lab 2. Please check your updated timetable on the portal.', likes: 47, comments: 12, liked: false, bookmarked: false, tag: 'Announcement', tagColor: '#6378ff' },
-  { id: 2, user: USERS[0], time: '32 min ago', content: '🏆 Just cracked the SRM Hackathon! Team TechNova secured 1st place with our AI-powered campus safety system. Grateful to our mentors Dr. Priya Nair and the entire CSE dept! 🚀 #SRMHackathon2024', likes: 312, comments: 56, liked: true, bookmarked: false, tag: 'Achievement', tagColor: '#f5a623' },
-  { id: 3, user: USERS[1], time: '1 hr ago', content: '📚 Study group for DSA finals forming up! Meeting this Saturday 3PM at the Central Library, 2nd floor. DM me to join. Covering Trees, Graphs & Dynamic Programming. Open to all years! 💻', likes: 89, comments: 23, liked: false, bookmarked: true, tag: 'Study', tagColor: '#00e5a0' },
-  { id: 4, user: USERS[3], time: '2 hrs ago', content: '🔔 WHISTLEBLOWER: The canteen near Block-C has been charging ₹5 extra on the menu price for almost a month now. I\'ve reported this to the admin office. Anyone else facing this? Let\'s track together 👀', likes: 234, comments: 67, liked: false, bookmarked: false, tag: 'Whistleblower', tagColor: '#ff4d6d' },
-  { id: 5, user: USERS[4], time: '3 hrs ago', content: '✨ The new rooftop garden near the Admin block is finally open! Great spot to study and chill between classes. Highly recommend 🌿☕', likes: 156, comments: 31, liked: false, bookmarked: false, tag: 'Campus Life', tagColor: '#22d3ee' },
+  { id:1, author:'Arjun Menon',   role:'Student',   college:'KC', color:'#5b6ef5', type:'study',         content:'🧵 Just uploaded a comprehensive CN Unit 3 mind map covering Dijkstra, Bellman-Ford, and Floyd-Warshall. Check the Study Hub! Took me 3 days to compile this — hope it helps for the end-sem. Tag anyone who might need it! #ComputerNetworks #CSE',                  likes:42, comments:8, time:'1h',  liked:false, saved:false },
+  { id:2, author:'Tanvi Sharma',  role:'Faculty',   college:'TC', color:'#00c896', type:'announcement',  content:'📢 Important: CS6002 Machine Learning end-semester project submission deadline extended to March 20th. All groups must submit the GitHub repo link + 10-page report. No further extensions will be granted. Contact your batch representative for any queries.',         likes:118, comments:23, time:'2h', liked:false, saved:false },
+  { id:3, author:'Anonymous',     role:null,        college:'VC', color:'#ff6b35', type:'whistleblower',  content:'🔔 The canteen in Block C has been charging ₹60 for meals that are listed as ₹45 on the official menu board. This has been happening for 3 weeks. Photos attached. Administration please look into this — we\'re already paying high mess fees.',               likes:203, comments:47, time:'3h', liked:false, saved:false },
+  { id:4, author:'Keerthana V.',  role:'Student',   college:'BC', color:'#e8b400', type:'achievement',   content:'🏆 Beyond proud! Our team (Bose College, CSE-B) just won 1st place at the Hackathon organized by the CS Dept! 36 hours, zero sleep, 3 Red Bulls and a lot of debugging later — we built a real-time campus parking optimizer. Huge thanks to Dr. Rajkumar for mentoring us! 🎉',  likes:347, comments:62, time:'5h', liked:false, saved:false },
+  { id:5, author:'Ravi Prakash',  role:'Student',   college:'KC', color:'#5b6ef5', type:'event',         content:'🎉 Inter-College Cultural Night is happening THIS Friday at 7 PM in the Open Air Theatre! All 4 colleges performing. Kalam College is presenting a fusion dance — "Roots & Routes". Free entry for all SRM students. Come support! Passes at the common room.',          likes:89, comments:15, time:'6h',  liked:false, saved:false },
+  { id:6, author:'Dr. S. Raman',  role:'Faculty',   college:'TC', color:'#00c896', type:'post',          content:'Interesting paper out of MIT on transformer architectures for code generation. The efficiency gains over GPT-4 are substantial — roughly 40% faster inference with comparable quality. If anyone is working on their final year project in NLP/ML, this is worth reading. Sharing the link in the Study Hub.',  likes:56, comments:9, time:'8h',  liked:false, saved:false },
+  { id:7, author:'Priya Nair',    role:'Student',   college:'VC', color:'#ff6b35', type:'study',         content:'📚 Anyone have good resources for OS Unit 5 — Memory Management? Specifically paging vs segmentation trade-offs. Our end-sem is in 3 weeks and I\'m struggling with the numericals. #OS #Help',  likes:28, comments:14, time:'10h', liked:false, saved:false },
 ]
-
-function StreakBadge({ streak }) {
-  const hot = streak >= 30
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: '700', color: hot ? '#f5a623' : 'var(--text-3)' }}>
-      <Flame size={12} style={{ color: hot ? '#f5a623' : 'var(--text-3)' }} />{streak}d
-    </div>
-  )
-}
-
-function PostCard({ post: p, onLike, onBookmark }) {
-  const [showComment, setShowComment] = useState(false)
-  const [comment, setComment] = useState('')
-
-  return (
-    <div className="post-card fade-up">
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-        <div style={{ position: 'relative' }}>
-          <div className="streak-ring" style={{ padding: '2px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: `linear-gradient(135deg, ${p.user.color}, ${p.user.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '15px', color: 'white' }}>{p.user.avatar}</div>
-          </div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-1)' }}>{p.user.name}</span>
-            <StreakBadge streak={p.user.streak} />
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>{p.user.role} · {p.time}</div>
-        </div>
-        <span className="badge" style={{ background: `${p.tagColor}15`, color: p.tagColor, border: `1px solid ${p.tagColor}30`, fontSize: '10px' }}>{p.tag}</span>
-      </div>
-
-      {/* Content */}
-      <p style={{ fontSize: '14px', color: 'var(--text-1)', lineHeight: '1.65', marginBottom: '16px' }}>{p.content}</p>
-
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
-        <button className={`reaction-btn ${p.liked ? 'liked' : ''}`} onClick={() => onLike(p.id)}>
-          <Heart size={14} fill={p.liked ? 'currentColor' : 'none'} /> {p.likes}
-        </button>
-        <button className="reaction-btn" onClick={() => setShowComment(!showComment)}>
-          <MessageCircle size={14} /> {p.comments}
-        </button>
-        <button className="reaction-btn"><Share2 size={14} /> Share</button>
-        <button className={`reaction-btn`} style={{ marginLeft: 'auto', color: p.bookmarked ? 'var(--primary)' : undefined }} onClick={() => onBookmark(p.id)}>
-          <Bookmark size={14} fill={p.bookmarked ? 'currentColor' : 'none'} />
-        </button>
-      </div>
-
-      {showComment && (
-        <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
-          <input className="input" placeholder="Write a comment..." value={comment} onChange={e => setComment(e.target.value)} style={{ fontSize: '13px' }} />
-          <button className="btn btn-primary btn-sm" onClick={() => setComment('')}><Send size={13} /></button>
-        </div>
-      )}
-    </div>
-  )
-}
+const STREAKS = [
+  { name:'Keerthana V.', college:'BC', color:'#e8b400', streak:21, posts:47, rank:1 },
+  { name:'Arjun Menon',  college:'KC', color:'#5b6ef5', streak:14, posts:38, rank:2 },
+  { name:'Tanvi Sharma', college:'TC', color:'#00c896', streak:12, posts:29, rank:3 },
+  { name:'Ravi Prakash', college:'KC', color:'#5b6ef5', streak:9,  posts:22, rank:4 },
+  { name:'Priya Nair',   college:'VC', color:'#ff6b35', streak:7,  posts:18, rank:5 },
+]
+const COLLEGE_ACTIVITY = [
+  { code:'VC', name:'Vivekananda', color:'#ff6b35', posts:234, pct:88 },
+  { code:'KC', name:'Kalam',       color:'#5b6ef5', posts:201, pct:75 },
+  { code:'TC', name:'Tagore',      color:'#00c896', posts:178, pct:67 },
+  { code:'BC', name:'Bose',        color:'#e8b400', posts:156, pct:58 },
+]
 
 export default function SocialFeed() {
-  const [posts, setPosts] = useState(INIT_POSTS)
-  const [newPost, setNewPost] = useState('')
-  const [activeTab, setActiveTab] = useState('all')
-  const [postType, setPostType] = useState('post')
+  const [posts, setPosts]         = useState(INIT_POSTS)
+  const [activeCollege, setAC]    = useState('all')
+  const [activeType, setAT]       = useState('all')
+  const [showCompose, setCompose] = useState(false)
+  const [draft, setDraft]         = useState({ content:'', type:'post', anonymous:false })
 
-  const onLike = (id) => setPosts(posts.map(p => p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p))
-  const onBookmark = (id) => setPosts(posts.map(p => p.id === id ? { ...p, bookmarked: !p.bookmarked } : p))
+  const filtered = posts.filter(p =>
+    (activeCollege==='all' || p.college===activeCollege) &&
+    (activeType==='all'    || p.type===activeType)
+  )
+
+  const toggleLike = (id) => setPosts(prev=>prev.map(p=>p.id===id?{...p, liked:!p.liked, likes:p.likes+(p.liked?-1:1)}:p))
+  const toggleSave = (id) => setPosts(prev=>prev.map(p=>p.id===id?{...p, saved:!p.saved}:p))
 
   const submitPost = () => {
-    if (!newPost.trim()) return
-    const tags = { post: { tag: 'Campus Life', color: '#22d3ee' }, announcement: { tag: 'Announcement', color: '#6378ff' }, whistleblower: { tag: 'Whistleblower', color: '#ff4d6d' }, achievement: { tag: 'Achievement', color: '#f5a623' } }
-    const t = tags[postType]
-    setPosts([{ id: Date.now(), user: USERS[0], time: 'Just now', content: newPost, likes: 0, comments: 0, liked: false, bookmarked: false, tag: t.tag, tagColor: t.color }, ...posts])
-    setNewPost('')
+    if (!draft.content.trim()) return
+    const newPost = {
+      id: Date.now(), author:draft.anonymous?'Anonymous':'You', role:'Student',
+      college:'KC', color:'#5b6ef5', type:draft.type,
+      content:draft.content, likes:0, comments:0, time:'now', liked:false, saved:false
+    }
+    setPosts([newPost, ...posts])
+    setDraft({ content:'', type:'post', anonymous:false })
+    setCompose(false)
   }
 
-  const tabs = ['all', 'announcements', 'whistleblower', 'achievements']
-  const filtered = activeTab === 'all' ? posts : posts.filter(p => p.tag.toLowerCase().includes(activeTab.slice(0, 5)))
-
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-      {/* Feed */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Compose */}
-        <div className="card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            {['post', 'announcement', 'whistleblower', 'achievement'].map(t => (
-              <button key={t} onClick={() => setPostType(t)}
-                className="btn btn-sm" style={{ textTransform: 'capitalize', fontSize: '11px',
-                  background: postType === t ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
-                  color: postType === t ? 'white' : 'var(--text-2)', border: '1px solid var(--border)' }}>
-                {t === 'whistleblower' ? '🔔 Whistle' : t}
-              </button>
+    <Layout title="College Social Feed">
+      <div className="feed-col-layout">
+
+        {/* ── LEFT SIDEBAR ── */}
+        <div className="feed-sidebar">
+          {/* Filter by College */}
+          <div className="card card-p" style={{ marginBottom:'14px' }}>
+            <div className="card-title" style={{ marginBottom:'12px' }}>🏛 Filter by College</div>
+            <div onClick={()=>setAC('all')} style={{ padding:'8px 12px', borderRadius:'9px', marginBottom:'6px', cursor:'pointer', background:activeCollege==='all'?'var(--glass)':'transparent', border:activeCollege==='all'?'1px solid var(--border2)':'1px solid transparent', color:activeCollege==='all'?'var(--t1)':'var(--t3)', fontSize:'13px', fontWeight:activeCollege==='all'?700:400 }}>
+              All Colleges
+            </div>
+            {COLLEGES.map(c=>(
+              <div key={c.code} onClick={()=>setAC(activeCollege===c.code?'all':c.code)} style={{
+                display:'flex', alignItems:'center', gap:'9px', padding:'9px 12px',
+                borderRadius:'9px', marginBottom:'4px', cursor:'pointer',
+                background:activeCollege===c.code?`${c.color}14`:'transparent',
+                border:activeCollege===c.code?`1px solid ${c.color}40`:'1px solid transparent',
+                transition:'all 0.15s'
+              }}>
+                <div style={{ width:'9px', height:'9px', borderRadius:'3px', background:c.color, flexShrink:0 }}/>
+                <span style={{ fontSize:'13px', fontWeight:activeCollege===c.code?700:500, color:activeCollege===c.code?c.color:'var(--t2)' }}>{c.name}</span>
+                <span style={{ marginLeft:'auto', fontSize:'10px', color:'var(--t3)' }}>{COLLEGE_ACTIVITY.find(a=>a.code===c.code)?.posts}</span>
+              </div>
             ))}
           </div>
-          <textarea
-            className="input" placeholder={postType === 'whistleblower' ? '🔔 Report an issue anonymously...' : "What's on your mind?"}
-            value={newPost} onChange={e => setNewPost(e.target.value)}
-            style={{ resize: 'none', height: '80px', marginBottom: '10px' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button className="btn btn-ghost btn-sm"><Image size={14} /> Photo</button>
-            <button className="btn btn-primary btn-sm" onClick={submitPost}><Send size={13} /> Post</button>
+
+          {/* Post type filter */}
+          <div className="card card-p">
+            <div className="card-title" style={{ marginBottom:'12px' }}>🏷 Post Type</div>
+            {POST_TYPES.map(pt=>{
+              const meta = pt==='all'?{icon:'◈',color:'var(--t2)',label:'All Posts'}:TYPE_META[pt]
+              return (
+                <div key={pt} onClick={()=>setAT(pt)} style={{
+                  display:'flex', alignItems:'center', gap:'9px', padding:'8px 10px',
+                  borderRadius:'9px', marginBottom:'4px', cursor:'pointer',
+                  background:activeType===pt?`${meta.color}14`:'transparent',
+                  transition:'all 0.15s'
+                }}>
+                  <span style={{ fontSize:'14px' }}>{meta.icon}</span>
+                  <span style={{ fontSize:'12.5px', fontWeight:activeType===pt?700:400, color:activeType===pt?meta.color:'var(--t2)' }}>{meta.label}</span>
+                </div>
+              )
+            })}
           </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {tabs.map(t => (
-            <button key={t} onClick={() => setActiveTab(t)} className="btn btn-sm"
-              style={{ textTransform: 'capitalize', background: activeTab === t ? 'var(--primary)' : 'rgba(255,255,255,0.04)', color: activeTab === t ? 'white' : 'var(--text-2)', border: '1px solid var(--border)', fontSize: '12px' }}>
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {filtered.map(p => <PostCard key={p.id} post={p} onLike={onLike} onBookmark={onBookmark} />)}
-      </div>
-
-      {/* Sidebar */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Streak leaderboard */}
-        <div className="card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontWeight: '700', color: 'var(--text-1)' }}>
-            <Flame size={16} style={{ color: 'var(--gold)' }} /> Streak Leaders
-          </div>
-          {[...USERS].sort((a,b) => b.streak - a.streak).map((u, i) => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < 4 ? '1px solid var(--border)' : 'none' }}>
-              <span className="mono" style={{ fontSize: '13px', color: 'var(--text-3)', width: '18px' }}>#{i+1}</span>
-              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `linear-gradient(135deg, ${u.color}, ${u.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: 'white' }}>{u.avatar}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-1)' }}>{u.name.split(' ')[0]}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{u.role.split(' ')[0]}</div>
+        {/* ── CENTER FEED ── */}
+        <div className="feed-main">
+          {/* Compose button */}
+          {!showCompose ? (
+            <div className="card card-p" style={{ marginBottom:'14px', cursor:'text' }} onClick={()=>setCompose(true)}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:'rgba(91,110,245,0.22)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:800, color:'#5b6ef5', border:'1px solid rgba(91,110,245,0.4)' }}>KC</div>
+                <div style={{ flex:1, padding:'9px 14px', borderRadius:'20px', background:'var(--bg3)', border:'1px solid var(--border2)', fontSize:'13px', color:'var(--t3)' }}>Share something with your college...</div>
+                <button className="btn btn-primary btn-sm" onClick={e=>{e.stopPropagation();setCompose(true)}}>Post</button>
               </div>
-              <StreakBadge streak={u.streak} />
             </div>
-          ))}
+          ) : (
+            <div className="card card-p" style={{ marginBottom:'14px' }}>
+              {/* Type picker */}
+              <div style={{ display:'flex', gap:'6px', marginBottom:'12px', flexWrap:'wrap' }}>
+                {Object.entries(TYPE_META).map(([k,v])=>(
+                  <button key={k} onClick={()=>setDraft(d=>({...d,type:k}))} style={{
+                    padding:'4px 10px', borderRadius:'20px', border:'none', cursor:'pointer',
+                    fontSize:'11px', fontWeight:700,
+                    background:draft.type===k?v.color:v.color+'18',
+                    color:draft.type===k?'#fff':v.color
+                  }}>{v.icon} {v.label}</button>
+                ))}
+              </div>
+              <textarea
+                autoFocus
+                placeholder={`Share a ${draft.type}...`}
+                value={draft.content}
+                onChange={e=>setDraft(d=>({...d,content:e.target.value}))}
+                style={{ width:'100%', minHeight:'100px', background:'var(--bg3)', border:'1px solid var(--border2)', borderRadius:'10px', padding:'12px', color:'var(--t1)', fontFamily:'var(--font-body)', fontSize:'13.5px', outline:'none', resize:'vertical', lineHeight:1.6 }}
+              />
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginTop:'10px' }}>
+                <label style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'12.5px', color:'var(--t2)', cursor:'pointer' }}>
+                  <input type="checkbox" checked={draft.anonymous} onChange={e=>setDraft(d=>({...d,anonymous:e.target.checked}))} style={{ accentColor:'var(--student)' }}/>
+                  Post anonymously
+                </label>
+                <div style={{ marginLeft:'auto', display:'flex', gap:'8px' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setCompose(false)}>Cancel</button>
+                  <button className="btn btn-primary btn-sm" onClick={submitPost} disabled={!draft.content.trim()}>Post</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Posts */}
+          {filtered.map((p, pi) => {
+            const tm = TYPE_META[p.type]
+            return (
+              <div key={p.id} className="post-card" style={{ animationDelay:`${pi*0.04}s`, animation:'fadeUp 0.35s ease both' }}>
+                <div className="post-college-bar" style={{ background:p.color }}/>
+                <div className="post-body">
+                  {/* Author row */}
+                  <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
+                    <div className="post-avatar-wrap">
+                      <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:`${p.color}22`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:800, color:p.color, border:`1.5px solid ${p.color}55` }}>
+                        {p.author==='Anonymous'?'?':p.author.split(' ').map(n=>n[0]).join('').slice(0,2)}
+                      </div>
+                      <div className="post-college-badge" style={{ background:p.color }}>{p.college}</div>
+                    </div>
+                    <div>
+                      <div className="post-author">{p.author}</div>
+                      <div className="post-role" style={{ color:p.color+'aa' }}>{p.role || 'Anonymous'} · {p.college}</div>
+                    </div>
+                    <span style={{ marginLeft:'auto', fontSize:'11px', color:'var(--t3)' }}>{p.time}</span>
+                  </div>
+                  {/* Type pill */}
+                  <div className="post-type-pill" style={{ background:`${tm.color}15`, color:tm.color, border:`1px solid ${tm.color}30` }}>
+                    {tm.icon} {tm.label}
+                  </div>
+                  {/* Content */}
+                  <p className="post-content">{p.content}</p>
+                  {/* Actions */}
+                  <div className="post-actions">
+                    <button className={`reaction-btn ${p.liked?'liked':''}`} onClick={()=>toggleLike(p.id)}>
+                      {p.liked?'❤️':'🤍'} {p.likes}
+                    </button>
+                    <button className="reaction-btn">💬 {p.comments}</button>
+                    <button className="reaction-btn">↗ Share</button>
+                    <button className={`reaction-btn`} style={{ marginLeft:'auto', color:p.saved?'var(--accounts)':'var(--t3)' }} onClick={()=>toggleSave(p.id)}>
+                      {p.saved?'🔖':'🏷'} {p.saved?'Saved':'Save'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {filtered.length===0 && (
+            <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--t3)' }}>
+              <div style={{ fontSize:'36px', marginBottom:'12px' }}>🔍</div>
+              <div style={{ fontSize:'14px' }}>No posts match this filter</div>
+            </div>
+          )}
         </div>
 
-        {/* Trending */}
-        <div className="card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontWeight: '700', color: 'var(--text-1)' }}>
-            <TrendingUp size={16} style={{ color: 'var(--primary)' }} /> Trending
+        {/* ── RIGHT SIDEBAR ── */}
+        <div className="feed-right">
+          {/* Streak leaderboard */}
+          <div className="card card-p" style={{ marginBottom:'14px' }}>
+            <div className="card-title" style={{ marginBottom:'12px' }}>🔥 Streak Leaderboard</div>
+            {STREAKS.map((s,i)=>(
+              <div key={i} className="streak-item">
+                <div className="streak-rank">#{s.rank}</div>
+                <div style={{ width:'30px', height:'30px', borderRadius:'50%', background:`${s.color}22`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:800, color:s.color, border:`1px solid ${s.color}44`, flexShrink:0 }}>{s.college}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:'12px', fontWeight:700, color:'var(--t1)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.name}</div>
+                  <div style={{ fontSize:'10px', color:'var(--t3)' }}>{s.posts} posts total</div>
+                </div>
+                <div style={{ textAlign:'right', flexShrink:0 }}>
+                  <div className="streak-fire">🔥</div>
+                  <div className="streak-count" style={{ color:s.color }}>{s.streak}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          {['#SRMHackathon2024', '#FinalsPrepration', '#CanteenIssue', '#CampusLife', '#TPCell'].map((tag, i) => (
-            <div key={tag} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: i < 4 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
-              <span style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: '600' }}>{tag}</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>{[312, 234, 189, 145, 98][i]} posts</span>
-            </div>
-          ))}
+
+          {/* College Activity bars */}
+          <div className="card card-p">
+            <div className="card-title" style={{ marginBottom:'12px' }}>📊 College Activity (This Week)</div>
+            {COLLEGE_ACTIVITY.map(c=>(
+              <div key={c.code} style={{ marginBottom:'12px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                    <div style={{ width:'8px', height:'8px', borderRadius:'2px', background:c.color }}/>
+                    <span style={{ fontSize:'12px', fontWeight:600, color:'var(--t2)' }}>{c.name}</span>
+                  </div>
+                  <span style={{ fontSize:'11px', color:'var(--t3)', fontFamily:'var(--font-mono)' }}>{c.posts}</span>
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width:`${c.pct}%`, background:c.color }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trending tags */}
+          <div className="card card-p" style={{ marginTop:'14px' }}>
+            <div className="card-title" style={{ marginBottom:'12px' }}>🔥 Trending</div>
+            {['#EndSemPrep','#SRMHackathon','#CanteenIssue','#MLProject','#FYP2025','#InterCollege'].map((t,i)=>(
+              <div key={i} style={{ padding:'7px 0', borderBottom:'1px solid var(--border)', fontSize:'12.5px', color:'var(--student)', cursor:'pointer' }}>
+                {t} <span style={{ float:'right', fontSize:'10px', color:'var(--t3)' }}>{Math.floor(20+Math.random()*60)} posts</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
