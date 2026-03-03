@@ -13,23 +13,51 @@ export const ROLE_META = {
   parent:    { label:'Parent / Guardian',  color:'#9b87f5', icon:'◇', bg:'rgba(155,135,245,0.12)' },
 }
 
-export const DEMO_USERS = {
-  admin:     { id:'u1', name:'Dr. V. Rajkumar',      role:'admin',     dept:'Administration', college:null, collegeCode:null, collegeColor:null },
-  student:   { id:'u2', name:'Rahul Sharma',          role:'student',   dept:'CSE', reg:'RA2111003010001', year:3, cgpa:8.72, streak:14, college:'Kalam College', collegeCode:'KC', collegeColor:'#5b6ef5', hostelRoom:'B-204', messPlan:'Full Board', isHosteller:true },
-  faculty:   { id:'u3', name:'Dr. Priya Nair',        role:'faculty',   dept:'CSE', empId:'EMP-CSE-001', designation:'Assoc. Professor', college:'Tagore College', collegeCode:'TC', collegeColor:'#00c896' },
-  accounts:  { id:'u4', name:'Kavitha Subramanian',   role:'accounts',  dept:'Finance', college:null, collegeCode:null, collegeColor:null },
-  security:  { id:'u5', name:'Ram Kumar',              role:'security',  dept:'Security', college:null, collegeCode:null, collegeColor:null },
-  transport: { id:'u6', name:'Suresh Pandian',         role:'transport', dept:'Transport', college:null, collegeCode:null, collegeColor:null },
-  medical:   { id:'u7', name:'Dr. Anitha Krishnan',   role:'medical',   dept:'Medical', college:null, collegeCode:null, collegeColor:null },
-  parent:    { id:'u8', name:'Mr. S. Krishnaswamy',   role:'parent',    college:'Kalam College', collegeCode:'KC', collegeColor:'#5b6ef5', childName:'Rahul Sharma', childReg:'RA2111003010001', childYear:3, childCGPA:8.72 },
-}
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   useEffect(() => {
-    try { const s = localStorage.getItem('srm_v2_user'); if(s) setUser(JSON.parse(s)) } catch{}
-  },[])
-  const login  = (role) => { const u = DEMO_USERS[role]; localStorage.setItem('srm_v2_user', JSON.stringify(u)); setUser(u) }
-  const logout = () => { localStorage.removeItem('srm_v2_user'); setUser(null) }
-  return <AuthContext.Provider value={{user, login, logout}}>{children}</AuthContext.Provider>
+    try {
+      const s = localStorage.getItem('srm_v2_user')
+      if (s) setUser(JSON.parse(s))
+    } catch {}
+  }, [])
+
+  // Called after successful login (from LoginPage)
+  const loginWithToken = (authResult) => {
+    const u = authResult.user
+    localStorage.setItem('srm_v2_user', JSON.stringify(u))
+    setUser(u)
+  }
+
+  // Legacy demo quick-login (kept for backwards compat)
+  const login = (role) => {
+    const DEMO = {
+      admin:     { id:'u1', name:'Dr. V. Rajkumar',      role:'admin',     dept:'Administration',  college_code:null, college_name:null,        college_color:null     },
+      student:   { id:'u2', name:'Rahul Sharma',          role:'student',   dept:'CSE',             college_code:'KC', college_name:'Kalam College',    college_color:'#5b6ef5' },
+      faculty:   { id:'u3', name:'Dr. Priya Nair',        role:'faculty',   dept:'CSE',             college_code:'TC', college_name:'Tagore College',   college_color:'#00c896' },
+      accounts:  { id:'u4', name:'Kavitha Subramanian',   role:'accounts',  dept:'Finance',         college_code:null, college_name:null,        college_color:null     },
+      security:  { id:'u5', name:'Ram Kumar',              role:'security',  dept:'Security',        college_code:null, college_name:null,        college_color:null     },
+      transport: { id:'u6', name:'Suresh Pandian',         role:'transport', dept:'Transport',       college_code:null, college_name:null,        college_color:null     },
+      medical:   { id:'u7', name:'Dr. Anitha Krishnan',   role:'medical',   dept:'Medical',         college_code:null, college_name:null,        college_color:null     },
+      parent:    { id:'u8', name:'Mr. S. Krishnaswamy',   role:'parent',    dept:null,              college_code:'KC', college_name:'Kalam College',    college_color:'#5b6ef5' },
+    }
+    const u = DEMO[role]
+    if (!u) return
+    localStorage.setItem('srm_v2_user', JSON.stringify(u))
+    setUser(u)
+  }
+
+  const logout = () => {
+    localStorage.removeItem('srm_v2_user')
+    localStorage.removeItem('srm_access_token')
+    localStorage.removeItem('srm_refresh_token')
+    localStorage.removeItem('srm_session_id')
+    setUser(null)
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, loginWithToken, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
